@@ -1,0 +1,47 @@
+﻿@model Forecast.Models.User
+@{
+    ViewBag.Title = "Login";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<head>
+
+</head>
+@*<head>
+    <link href="~/Content/materialize.min.css" rel="stylesheet" />
+    <link href="~/Content/Site.css" rel="stylesheet"/>
+    <script type="text/javascript" src="~/Scripts/materialize.min.js"></script>
+</head>*@
+<div class="row" id="login_row">
+    <div class="col s12 m3 l3 offset-m4 offset-l4">
+        <div class="card white z-depth-5">
+            <div class="card-content">
+                <span class="card-title light-blue-text">Login</span>
+                @using (Html.BeginForm("Login", "Home", FormMethod.Post))
+                {
+                    //this  is for create form tag
+                    @Html.AntiForgeryToken()
+                    //this is for prevent CSRF attack
+                    @Html.ValidationSummary(true)
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input class="validate" type="text" name="Username" id="Username" data-val="true" />
+                            <label for="Username">Enter Username:</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input class="validate" type="password" name="Password" />
+                            <label for="Password">Enter Password:</label>
+                        </div>
+                    </div>
+                    <center>
+                        <div id="submit-login-row" class="row">
+                            <input class="btn waves-effect indigo" type="submit" value="Submit" />
+                        </div>
+                    </center>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+

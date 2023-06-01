@@ -1,0 +1,1465 @@
+﻿@{
+    ViewBag.Title = "Forecast Tool";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@model Forecast.Models.User
+
+@if (!HttpContext.Current.IsDebuggingEnabled)
+{
+            <script>
+        @{
+            var cleanUser = ViewBag.Username.Replace("\\", "\\\\").Replace("'", "\\'");
+        }
+                var idUser = '@(cleanUser)';
+                FS.identify(idUser, {
+                    displayName: idUser
+                });
+            </script>
+}
+
+<script>
+
+    var remTime = @ViewBag.Expires;
+        console.log(remTime);
+        var timeout = (time) => setTimeout(() => window.location.href = 'Home/Logout', time);
+        timeout(remTime);
+</script>
+
+<a class="btn-floating btn blue" id="hide_filters">
+    <i class="material-icons">arrow_back</i>
+</a>
+<div id="nav_row" class="row">
+    <div id="side-nav-wrapper" class="col s12 m2 l2">
+        <ul id="nav_list" class="col m2 l2 side-nav blue-grey darken-1">
+            <li>
+                <div class="center_date">
+                    <p style="align-content:center" id="date-updated-through">Updated Through </p>
+                </div>
+            </li>
+            @*<li class="logo">
+                <a class="brand-logo"></a>
+                </li>*@
+
+            <li><h3 class="modal-head blue-grey darken-2 white-text center-align">FILTERS</h3></li>
+            <li class="no-padding">
+                <ul class="collapsible">
+                    <li class="bold">
+                        <a class="collapsible-header waves-effect waves-blue-grey white-text">
+                            BULK SELECT
+                            <i class="material-icons">keyboard_arrow_down</i>
+                        </a>
+                        <div class="collapsible-body blue-grey darken-1" style="display:block">
+                            <textarea rows="10" style="resize:vertical !important;" class="clean" id="filter-input" type="search" placeholder="Input ItemIDs: 12345, 359135, 32654"></textarea>
+                            <button class="waves-effect waves-light btn" id="filter-input-sub">Submit</button>
+                        </div>
+                    </li>
+                </ul>
+
+
+                <ul class="collapsible">
+                    <li class="bold">
+                        <a class="collapsible-header waves-effect waves-blue-grey white-text">GEOGRAPHICAL<i class="material-icons">keyboard_arrow_down</i></a>
+                        <div class="collapsible-body blue-grey darken-1" style="display: block;">
+                            <select id="filter-vendor"><option value="">Select Vendor</option></select>
+                            <select id="filter-md"><option value="">Select SRLGM</option></select>
+                            <select id="filter-mm"><option value="">Select LGM</option></select>
+                            <select id="filter-region"><option value="">Select Region</option></select>
+                            <select id="filter-district"><option value="">Select District</option></select>
+                            <select id="filter-patch"><option value="">Select Patch</option></select>
+                        </div>
+                    </li>
+                </ul>
+                <ul class="collapsible">
+                    <li class="bold">
+                        <a class="collapsible-header waves-effect waves-blue-grey white-text">PRODUCT<i class="material-icons">keyboard_arrow_down</i></a>
+                        <div class="collapsible-body blue-grey darken-1" style="display: block;">
+                            <select id="filter-prodgrp"><option value="">Select Product Group</option></select>
+                            <select id="filter-assrt"><option value="">Select Assortment</option></select>
+                            <select id="filter-item"><option value="">Select Item</option></select>
+                            <select id="filter-parent"><option value="">Select Parent</option></select>
+                        </div>
+                    </li>
+                </ul>
+                <ul class="collapsible">
+                    <li class="bold">
+                        <a class="collapsible-header waves-effect waves-blue-grey white-text" id="time-collapsible-header">TIME<i class="material-icons">keyboard_arrow_down</i></a>
+                        <div class="collapsible-body blue-grey darken-1" style="display: block;">
+                            <ul class="collapsible fiscal-selectors-collapsible">
+                                <li>
+                                    <a class="inner-collapsible collapsible-header waves-effect waves-blue-grey white-text" id="fiscal-wk-selectable-header">Select Fiscal Week<i class="material-icons">keyboard_arrow_down</i></a>
+                                    <div class="collapsible-body">
+                                        <ul id="fiscal-wk-selectable" class="drag-selectable"></ul>
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible fiscal-selectors-collapsible">
+                                <li>
+                                    <a class="inner-collapsible collapsible-header waves-effect waves-blue-grey white-text" id="fiscal-mo-selectable-header">Select Fiscal Month<i class="material-icons">keyboard_arrow_down</i></a>
+                                    <div class="collapsible-body">
+                                        <ul id="fiscal-mo-selectable" class="drag-selectable"></ul>
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible fiscal-selectors-collapsible">
+                                <li>
+                                    <a class="inner-collapsible collapsible-header waves-effect waves-blue-grey white-text" id="fiscal-qtr-selectable-header">Select Fiscal Qtr<i class="material-icons">keyboard_arrow_down</i></a>
+                                    <div class="collapsible-body">
+                                        <ul id="fiscal-qtr-selectable" class="drag-selectable"></ul>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+                <ul id="filter-box" class="collapsible popout">
+                    <li class="bold">
+                        <a id="applied-filters-header-link" class="collapsible-header waves-effect waves-blue grey darken-3 white-text active">
+                            <div class="inline-flex header-link-text">
+                                <i class="material-icons">keyboard_arrow_up</i>
+                                APPLIED FILTERS
+                            </div>
+                            <div id="exclude-toggle-container">
+                                <label class="switch-exclude">
+                                    <input id="exclude" type="checkbox">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </a>
+                        <!--include-->
+                        <div id="filter-box-body" class="collapsible-body">
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-vendor">
+                                        VENDOR
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-vendor-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-vendor" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-vendor">
+                                        EXCLUDE VENDOR
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-vendor-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-vendor" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-item">
+                                        ITEM
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-item-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-item" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-item">
+                                        EXCLUDE ITEM
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-item-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-item" class="collapsible-body exclude">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-md">
+                                        SRLGM
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-md-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-md" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-md">
+                                        EXCLUDE SRLGM
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-md-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-md" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-mm">
+                                        LGM
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-mm-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-mm" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-mm">
+                                        EXCLUDE LGM
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-mm-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-mm" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-region">
+                                        REGION
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-region-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-region" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-region">
+                                        EXCLUDE REGION
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-region-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-region" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-district">
+                                        DISTRICT
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-district-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-district" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-district">
+                                        EXCLUDE DISTRICT
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-district-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-district" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-patch">
+                                        PATCH
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-patch-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-patch" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-patch">
+                                        EXCLUDE PATCH
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-patch-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-patch" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-parent">
+                                        Parent
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-parent-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-parent" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-parent">
+                                        EXCLUDE Parent
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-parent-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-parent" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-prodgrp">
+                                        PRODUCT GROUP
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-prodgrp-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-prodgrp" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-prodgrp">
+                                        EXCLUDE PRODUCT GROUP
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-prodgrp-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-prodgrp" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-assrt">
+                                        ASSORTMENT
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-assrt-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-assrt" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-assrt">
+                                        EXCLUDE ASSORTMENT
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-assrt-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-assrt" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-fiscalwk">
+                                        FISCAL WEEK
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-fiscalwk-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-fiscalwk" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-fiscalwk">
+                                        EXCLUDE FISCAL WEEK
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-fiscalwk-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-fiscalwk" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-fiscalmo">
+                                        FISCAL MONTH
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-fiscalmo-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-fiscalmo" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-fiscalmo">
+                                        EXCLUDE FISCAL MONTH
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-fiscalmo-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-fiscalmo" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-fiscalqtr">
+                                        FISCAL QUARTER
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-fiscalqtr-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-fiscalqtr" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-exclude-fiscalqtr">
+                                        EXCLUDE FISCAL QUARTER
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-fiscalqtr-exclude-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-exclude-fiscalqtr" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                            <ul class="collapsible">
+                                <li class="accent-4">
+                                    <a class="collapsible-header waves-effect waves-blue grey active" id="filter-head-columnsort">
+                                        COLUMN SORT ORDER
+                                        <i class="material-icons">keyboard_arrow_up</i>
+                                        <i class="filter-clear-button material-icons wave bottom-wave" id="filter-columnsort-clear">delete</i>
+                                    </a>
+                                    <div id="filter-body-columnsort" class="collapsible-body">
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+
+                <a id="btn_ClearBookmark" class="waves-effect waves-light btn">Clear Settings</a>
+            </li>
+        </ul>
+    </div>
+
+    <div id="top-nav-wrapper" class="col s12 m12 l12">
+        <ul id="user-dropdown" class="dropdown-content" data-constrainwidth="false">
+            <li><h5>Menu</h5></li>
+            <li class="divider"></li>
+            <li id="notifications-button"><a href="#"><span id="notifications-menu-badge" class="new badge red menu-badge invisible" data-badge-caption=""></span><i class="material-icons">notifications</i>Notifications</a></li>
+            <li id="tutorial-button"><a href="#"><span id="tutorial-menu-badge" class="new badge blue menu-badge invisible" data-badge-caption=""></span><i class="material-icons">school</i>Tutorials</a></li>
+            <li id="dl-event-button"><a href="#"><span id="dl-event-menu-badge" class="new badge blue menu-badge invisible" data-badge-caption=""></span><i class="material-icons">event</i>Events</a></li>
+            @if (ViewBag.IsAdmin)
+            {
+                        <li id="admin-create-button"><a href="#"><i class="material-icons">create</i>Admin</a></li>
+            }
+            <li id="lnk_logout"><a href="#"><i class="material-icons">power_settings_new</i>Sign Out</a></li>
+        </ul>
+        <nav id="top_nav" class="nav-extended blue-grey darken-1">
+            <ul class="tabs tabs-transparent">
+                @*<li class="tab"><a href="#">Details</a></li>*@
+                <li id="forecast-tab-item" class="tab"><a class="modal-trigger active">Forecast</a></li>
+                <li id="exceptions-tab-item" class="tab"><a class="modal-trigger">Exceptions</a></li>
+                @if (Model.GMSVenID != 0)
+                {
+                            <li id="uploads-modal-trigger" class="tab"><a class="modal-trigger">Upload</a></li>
+                }
+                <li id="downloads-modal-trigger" class="tab"><a class="modal-trigger">Download</a></li>
+                <li id="bookmarks-modal-trigger" class="tab"><a class="modal-trigger">Bookmarks</a></li>
+                <li id="user-menu-icon" class="tab right dropdown-button" data-activates="user-dropdown">
+                    <span id="notifications-icon-badge" class="new badge red invisible" data-badge-caption=""></span>
+                    <i class="material-icons" clickable="true" id="user-dropdown-trigger">account_circle</i>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<a class="btn-floating btn blue right" id="hide_sum_boxes">
+    <i class="material-icons">arrow_upward</i>
+</a>
+<div id="sum-row" class="row">
+    <a class="dropdown-button btn" id="rotate-btn" href="#" data-activates="rotator-dropdown">Rotate</a>
+    <ul id="rotator-dropdown" class="dropdown-content">
+        <li id="rotate-accept-li"><a class="waves-effect waves-light btn white-text" id="rotate-accept">ACCEPT</a></li>
+        <li><p><input type="checkbox" id="rotate-vendor" class="rotator-checkbox" value="VendorDesc" /><label for="rotate-vendor">Vendor</label></p></li>
+        <li><p><input type="checkbox" id="rotate-item" class="rotator-checkbox default-rotate" value="ItemID" /><label for="rotate-item">Item</label></p></li>
+        <li><p><input type="checkbox" id="rotate-fiscalwk" class="rotator-checkbox" value="FiscalWk" /><label for="rotate-fiscalwk">Fiscal Week</label></p></li>
+        <li><p><input type="checkbox" id="rotate-fiscalmo" class="rotator-checkbox" value="FiscalMo" /><label for="rotate-fiscalmo">Fiscal Month</label></p></li>
+        <li><p><input type="checkbox" id="rotate-fiscalqtr" class="rotator-checkbox" value="FiscalQtr" /><label for="rotate-fiscalqtr">Fiscal Quarter</label></p></li>
+        <li><p><input type="checkbox" id="rotate-md" class="rotator-checkbox" value="MD" /><label for="rotate-md">SRLGM</label></p></li>
+        <li><p><input type="checkbox" id="rotate-mm" class="rotator-checkbox default-rotate" value="MM" /><label for="rotate-mm">LGM</label></p></li>
+        <li><p><input type="checkbox" id="rotate-region" class="rotator-checkbox" value="Region" /><label for="rotate-region">Region</label></p></li>
+        <li><p><input type="checkbox" id="rotate-district" class="rotator-checkbox" value="District" /><label for="rotate-district">District</label></p></li>
+        <li><p><input type="checkbox" id="rotate-patch" class="rotator-checkbox" value="Patch" /><label for="rotate-patch">Patch</label></p></li>
+        <li><p><input type="checkbox" id="rotate-parent" class="rotator-checkbox" value="ParentID" /><label for="rotate-parent">Parent</label></p></li>
+        <li><p><input type="checkbox" id="rotate-prodgrp" class="rotator-checkbox" value="ProdGrpID" /><label for="rotate-prodgrp">Product Group</label></p></li>
+        <li><p><input type="checkbox" id="rotate-assrt" class="rotator-checkbox" value="AssrtID" /><label for="rotate-assrt">Assortment</label></p></li>
+    </ul>
+
+    <!-- Column switch -->
+    <div class="switch" id="fixed-column-switch">
+        <label>
+            Off
+            <input type="checkbox">
+            <span class="lever"></span>
+            Lock Columns
+        </label>
+    </div>
+
+    <div id="vendor-sum">
+        <div class="col s2 m4 l4">
+            <ul class="collapsible sum-nav">
+                <li class="accent-1">
+                    <a class="collapsible-header sum-header active waves-effect waves-blue blue-grey darken-1 white-text">Vendor Units Summary</a>
+                    <div class="collapsible-body blue-grey z-depth-5 white-text">
+                        <table id="units-summary">
+                            <thead>
+                                <tr>
+                                    <th id="user-units-forecast" colspan="1" style="text-align:center">Forecast</th>
+                                    <th id="user-units-actual" colspan="1" style="text-align:center">Actual Prev52</th>
+                                    <th id="user-units-forecast-ty" colspan="1" style="text-align:center">Forecast</th>
+                                    <th id="user-units-var" colspan="1" style="text-align:center">Var</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div class="col s2 m4 l4">
+            <ul class="collapsible sum-nav">
+                <li class="accent-1">
+                    <a class="collapsible-header sum-header active waves-effect waves-blue blue-grey darken-1 white-text">Vendor $ Summary</a>
+                    <div class="collapsible-body blue-grey z-depth-5 white-text">
+                        <table id="dollar-summary">
+                            <thead>
+                                <tr>
+                                    <th id="user-units-forecast" colspan="1" style="text-align:center">Forecast</th>
+                                    <th id="user-units-actual" colspan="1" style="text-align:center">Actual Prev52</th>
+                                    <th id="user-units-forecast-ty" colspan="1" style="text-align:center">Forecast</th>
+                                    <th id="user-units-var" colspan="1" style="text-align:center">Var</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div id="margin-container" class="col s12 m3 l3">
+        <ul class="collapsible sum-nav">
+            <li class="accent-1">
+                <a class="collapsible-header sum-header active waves-effect waves-blue blue-grey darken-1 white-text">Margin % Summary</a>
+                <div class="collapsible-body blue-grey z-depth-5 white-text">
+                    <table id="margin-percent-summary">
+                        <thead>
+                            <tr>
+                                <th id="user-units-actual" colspan="1" style="text-align:center">Actual Prev52</th>
+                                <th id="user-units-forecast-ty" colspan="1" style="text-align:center">Forecast</th>
+                                <th id="user-units-var" colspan="1" style="text-align:center">Variance</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </li>
+        </ul>
+        <ul class="collapsible sum-nav">
+            <li class="accent-1">
+                <a class="collapsible-header sum-header active waves-effect waves-blue blue-grey darken-1 white-text">Margin $ Summary</a>
+                <div class="collapsible-body blue-grey z-depth-5 white-text">
+                    <table id="margin-dollar-summary">
+                        <thead>
+                            <tr>
+                                <th id="user-units-actual" colspan="1" style="text-align:center">Actual Prev52</th>
+                                <th id="user-units-forecast-ty" colspan="1" style="text-align:center">Forecast</th>
+                                <th id="user-units-var" colspan="1" style="text-align:center">Variance</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div id="editableForm">
+    <fieldset>
+        <legend>Forecast</legend>
+        <editor-field name="Units_FC_LOW_Var"></editor-field>
+        <editor-field name="SalesUnits_FC"></editor-field>
+        <editor-field name="RetailPrice_FC"></editor-field>
+    </fieldset>
+</div>
+
+<table id="ForecastTable" class="table-bordered display stripe order-column cell-border table-multi-sort" cellspacing="0" style="width:100%; height:50%; font-size:.8em">
+    <thead>
+        <tr class="blue lighten-1">
+            <th id="ForecastID" class="bol" colspan="1" style="text-align:center">ForecastID</th>
+            <th id="vendor" class="bol" colspan="1" style="text-align:center">Vendor</th>
+            <th id="item" class="bol" colspan="1" style="text-align:center">Item</th>
+            <th id="itemdesc" class="bol" colspan="1" style="text-align:left">Item Desc</th>
+            <th id="itemconcat" class="bol" colspan="1" style="text-align:left">Item Concat</th>
+            <th id="fiscalwk" class="bol" colspan="1" style="text-align:center">Fiscal Wk</th>
+            <th id="fiscalmo" class="bol" colspan="1" style="text-align:center">Fiscal Mo</th>
+            <th id="fiscalqtr" class="bol" colspan="1" style="text-align:center">Fiscal Qtr</th>
+            <th id="md" class="bol" colspan="1" style="text-align:center">SRLGM</th>
+            <th id="mm" class="bol" colspan="1" style="text-align:center">LGM</th>
+            <th id="region" class="bol" colspan="1" style="text-align:center">Region</th>
+            <th id="district" class="bol" colspan="1" style="text-align:center">District</th>
+            <th id="patch" class="bol" colspan="1" style="text-align:center">Patch</th>
+            <th id="parent" class="bol" colspan="1" style="text-align:center">Parent</th>
+            <th id="parentdesc" class="bol" colspan="1" style="text-align:center">Parent Desc</th>
+            <th></th>
+            <th id="prodgrp" class="bol" colspan="1" style="text-align:center">ProdGrp</th>
+            <th id="prodgrpdesc" class="bol" colspan="1" style="text-align:left">ProdGrp Desc</th>
+            <th></th>
+            <th id="assrt" class="bol" colspan="1" style="text-align:center">Assortment</th>
+            <th id="assrtdesc" class="bol" colspan="1" style="text-align:left">Assortment Description</th>
+            <th></th>
+            <!--TEMP: Remove/Delete later.-->
+            <!--<th id="vbu" class="bol" colspan="1" style="text-align:center">VBU %</th>-->
+            @* Beginning of column groups *@
+            <th id="sales_dollars" class="bol" colspan="7" style="text-align:center">Sales Dollars</th>
+            <th id="turns" class="bol" colspan="4" style="text-align:center">Turns</th>
+            <th id="sales_units" class="bol" colspan="5" style="text-align:center">Sales Units</th>
+            <th id="retail_price" class="bol" colspan="5" style="text-align:center">Retail Price</th>
+            <th id="mp_sales_and_margin" class="bol" colspan="5" style="text-align:center">MP</th>
+            <th id="price_sens" class="bol" colspan="2" style="text-align:center">Price Sensitivity</th>
+            <th id="asp" class="bol " colspan="4" style="text-align:center">ASP</th>
+            <th id="margin_perc" class="bol" colspan="5" style="text-align:center">Margin %</th>
+            <th id="margin_dollars" class="bol" colspan="5" style="text-align:center">Margin $</th>
+            <th id="sell_thru" class="bol" colspan="2" style="text-align:center">Sell Thru</th>
+            <th id="rec_dollars" class="bol" colspan="2" style="text-align:center">Receipt Dollars</th>
+            <th id="rec_units" class="bol" colspan="2" style="text-align:center">Receipt Units</th>
+            <th id="forecast_group" class="bol" colspan="12" style="text-align:center">Forecast Comparison</th>
+            <th id="cost" class="bol" colspan="4" style="text-align:center">Cost</th>
+            <th id="comments" class="bol bor" colspan="2" style="text-align:center">Comments</th>
+        </tr>
+        <tr class="grey lighten-1" id="sub-columns-row">
+            <th class="bol bor"></th>
+            @*ForecastID*@
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <!--TEMP: Remove/Delete later.-->
+            @*<th class="bol bor"></th>*@
+            <th class="sales_dollars bol">Prev52-</br>2 YR Ago</th>
+            <th class="sales_dollars ">Prev52-</br>1 YR Ago</th>
+            <th class="sales_dollars">Prev52</th>
+            <th class="sales_dollars">FY ASP $</th>
+            <th class="sales_dollars bor">Var</th>
+            <th class="sales_dollars">FR</th>
+            <th class="sales_dollars bor">CAGR</th>
+            <th class="turns bol">Prev52-</br>1 YR Ago</th>
+            <th class="turns ">Prev52</th>
+            <th class="turns">FY</th>
+            <th class="turns bor">Var</th>
+            <th class="sales_units bol">Prev52-</br>2 YR Ago</th>
+            <th class="sales_units">Prev52-</br>1 YR Ago</th>
+            <th class="sales_units bol su-def-col">Prev52</th>
+            <th class="sales_units">FY Units</th>
+            <th class="sales_units bor">Var</th>
+            <th class="retail_price bol">Prev52-</br>1 YR Ago</th>
+            <th class="retail_price rp-def-col">Prev52</th>
+            <th class="retail_price">FY</br> Retail</br> Price</th>
+            <th class="retail_price">Var</th>
+            <th class="retail_price bor">Erosion </br>Rate</th>
+            <th class="mp_sales_and_margin bol">Sales $ Retail</br> Prev52-</br>1 YR Ago</th>
+            <th class="mp_sales_and_margin">Sales $ Retail</br> Prev52</th>
+            <th class="mp_sales_and_margin">Margin $ Retail</br> Prev52-</br>1 YR Ago</th>
+            <th class="mp_sales_and_margin">Margin $ Retail</br> Prev52</th>
+            <th class="mp_sales_and_margin">Margin Var Retail</th>
+            <th class="price_sens bol">Percent</th>
+            <th class="price_sens">Impact Sensitivity</th>
+            <th class="asp bol">Prev52-</br>1 YR Ago</th>
+            <th class="asp">Prev52</th>
+            <th class="asp">FY</br> ASP</th>
+            <th class="asp">Var</th>
+            <th class="margin_perc bol">Prev52-</br>1 YR Ago</th>
+            <th class="margin_perc">Prev52</th>
+            <th class="margin_perc">FY</br> ASP $</th>
+            <th class="margin_perc">Var</th>
+            <th class="margin_perc">FY</br> Retail</br> $</th>
+            <th class="margin_dollars bol">Prev52-</br>1 YR Ago</th>
+            <th class="margin_dollars">Prev52</th>
+            <th class="margin_dollars">FY</br> Retail</br> $ Var</th>
+            <th class="margin_dollars">FY ASP $</th>
+            <th class="margin_dollars">FY Retail $</th>
+            <th class="sell_thru bol">Prev52-</br>1 YR Ago</th>
+            <th class="sell_thru">Prev52</th>
+            <th class="rec_dollars bol">Prev52-</br>1 YR Ago</th>
+            <th class="rec_dollars">Prev52</th>
+            <th class="rec_units bol">Prev52-</br>1 YR Ago</th>
+            <th class="rec_units">Prev52</th>
+            <th class="forecast_group bol">DemandLink (FY Sales $)</th>
+            <th class="forecast_group">Lowes (FY Sales $)</th>
+            <th class="forecast_group">Vendor (FY Sales $)</th>
+            <th class="forecast_group">DemandLink (FY Units)</th>
+            <th class="forecast_group">Lowes (FY Units)</th>
+            <th class="forecast_group">Vendor (FY Units)</th>
+            <th class="forecast_group">DemandLink (FY Sales $) Var</th>
+            <th class="forecast_group">Lowes (FY Sales $) Var</th>
+            <th class="forecast_group">Vendor (FY Sales $) Var</th>
+            <th class="forecast_group">DemandLink (FY Units) Var</th>
+            <th class="forecast_group">Lowes (FY Units) Var</th>
+            <th class="forecast_group">Vendor (FY Units) Var</th>
+            <th class="cost bol">Prev52-</br>1 YR Ago</th>
+            <th class="cost">Prev52</th>
+            <th class="cost">FY</th>
+            <th class="cost">Var</th>
+            <th class="comments bol">LGM Comments</th>
+            <th class="comments bor">Vendor Comments</th>
+        </tr>
+        <tr class="grey" id="sums">
+            <th class="bol bor"></th>
+            @*ForecastID*@
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <th class="bol bor"></th>
+            <!--TEMP: Remove/Delete later.-->
+            @*<th class="bol bor"></th>*@
+            <td class="bol" id="sums_salesdollars_2ly"></td>
+            <td id="sums_salesdollars_ly"></td>
+            <td id="sums_salesdollars_ty"></td>
+            <td id="sums_salesdollars_fy_asp"></td>
+            <td class="bor" id="sums_salesdollars_var"></td>
+            <td id="sums_salesdollars_fr"></td>
+            <td id="sums_salesdollars_cagr"></td>
+            <td class="bol" id="sums_turns_ly"></td>
+            <td id="sums_turns_ty"></td>
+            <td id="sums_turns_fy"></td>
+            <td id="sums_turns_var"></td>
+            <td class="bol" id="sums_salesunits_2ly"></td>
+            <td id="sums_salesunits_ly"></td>
+            <td class="su-def-col" id="sums_salesunits_ty"></td>
+            <td id="sums_salesunits_fy"></td>
+            <td class="bor" id="sums_salesunits_var"></td>
+            <td class="bol" id="sums_retailprice_ly"></td>
+            <td class="rp-def-col" id="sums_retailprice_ty"></td>
+            <td id="sums_retailprice_fy"></td>
+            <td id="sums_retailprice_var"></td>
+            <td class="bor" id="sums_retailprice_erosion_rate"></td>
+            <td class="bol" id="sums_mp_salesdollars_ly"></td>
+            <td id="sums_mp_salesdollars_ty"></td>
+            <td id="sums_mp_margindollars_ly"></td>
+            <td id="sums_mp_margindollars_ty"></td>
+            <td id="sums_mp_margindollars_var"></td>
+            <td class="bol" id="sums_pricesens_per"></td>
+            <td id="sums_pricesens_is"></td>
+            <td class="bol" id="sums_asp_ly"></td>
+            <td id="sums_asp_ty"></td>
+            <td id="sums_asp_fy"></td>
+            <td id="sums_asp_var"></td>
+            <td class="bol" id="sums_marginperc_ly"></td>
+            <td id="sums_marginperc_ty"></td>
+            <td id="sums_marginperc_fy"></td>
+            <td id="sums_marginperc_var"></td>
+            <td id="sums_marginperc_ftr"></td>
+            <td class="bol" id="sums_margindollars_ly"></td>
+            <td id="sums_margindollars_ty"></td>
+            <td id="sums_margindollars_fy_ret_var"></td>
+            <td id="sums_margindollars_fy_asp"></td>
+            <td id="sums_margindollars_ft_ret"></td>
+            <td class="bol" id="sums_sellthru_ly"></td>
+            <td id="sums_sellthru_ty"></td>
+            <td class="bol" id="sums_recdollars_ly"></td>
+            <td id="sums_recdollars_ty"></td>
+            <td class="bol" id="sums_recunits_ly"></td>
+            <td id="sums_recunits_ty"></td>
+            <td class="bol" id="sums_dl_fy_sales_dollars"></td>
+            <td id="sums_low_fy_sales_dollars"></td>
+            <td id="sums_vend_fy_sales_dollars"></td>
+            <td id="sums_dl_fy_sales_units"></td>
+            <td id="sums_low_fy_sales_units"></td>
+            <td id="sums_vend_fy_sales_units"></td>
+            <td id="sums_dl_fy_sales_dollars_var"></td>
+            <td id="sums_low_fy_sales_dollars_var"></td>
+            <td id="sums_vend_fy_sales_dollars_var"></td>
+            <td id="sums_dl_fy_sales_units_var"></td>
+            <td id="sums_low_fy_sales_units_var"></td>
+            <td id="sums_vend_fy_sales_units_var"></td>
+            <td class="bol" id="sums_cost_ly"></td>
+            <td id="sums_cost_ty"></td>
+            <td id="sums_cost_fy"></td>
+            <td id="sums_cost_var"></td>
+            <td class="bol" id="mm_comments"></td>
+            <td class="bor" id="vendor_comments"></td>
+        </tr>
+    </thead>
+</table>
+
+<div id="ipo_table_container" style="display: none">
+    <table id="ipo_table" class="display stripe order-column cell-border" cellspacing="0" style="width:100%; font-size: .8em">
+        <thead>
+            <tr class="grey lighten-1">
+                <th class="bor">Current Owner</th>
+                <th class="bor">Requesting Owner(s)</th>
+                <th class="bor">Item</th>
+                <th class="bor">Item Desc</th>
+                <th class="bor">Patch</th>
+                <th class="bor">LGM</th>
+                <th class="bor">SRLGM</th>
+                <th class="bor">Remove Claim</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<div id="bookmarkModal" class="modal bottom-sheet">
+    <div class="modal-content">
+        <select id="bookmarkList" style="width:10%"><option value="">Select a Bookmark</option></select>
+        <a id="btn_LoadBookmark" class="waves-effect waves-light btn">Load a Bookmark</a>
+        <a id="btn_DeleteBookmark" class="waves-effect waves-light btn">Delete Bookmark</a>
+        <input type="text" value="" id="BookmarkName" />
+        <a id="btn_CreateBookmark" class="waves-effect waves-light btn">Create Bookmark</a>
+    </div>
+</div>
+<div id="uploadModal" class="modal bottom-sheet">
+    <div class="modal-content">
+        <div class="dl-mat-card upload-modal-section" id="upload_items_modal_section">
+            <div class="upload-header-text">Upload Forecast</div>
+            @using (Html.BeginForm("Upload", "Home", FormMethod.Post, new { enctype = "multipart/form-data", @id = "items_file_form", @class = "upload-modal-file-form" }))
+            {
+                        <div id="getFile">
+                    @Html.TextBox("file", "", new { type = "file", @class = "upload-items-input", @id = "uploadBrowse" })
+                            <div class="upload-modal-section-file-name">
+                                <div class="upload-modal-section-file-name-label">File Name:</div>
+                                <div class="upload-modal-section-file-name-title" id="upload_items_file_title" triggerButton="upload"></div>
+                            </div>
+                            <div id="uploadTrigger" class="waves-effect waves-light btn">Browse</div>@ViewBag.Message
+                            <input type="button" id="upload" value="Upload" class="waves-effect waves-light btn disabled upload-button" />
+                        </div>
+                        <progress value="0" max="100" id="uploadProgress"></progress>
+            }
+        </div>
+        <div class="dl-mat-card upload-modal-section" id="new_items_modal_section">
+            <div class="upload-header-text">Upload New Items</div>
+            @using (Html.BeginForm("UploadNewItems", "Home", FormMethod.Post, new { enctype = "multipart/form-data", @id = "new_items_file_form", @class = "upload-modal-file-form" }))
+            {
+                        <div id="get_new_item_file">
+                    @Html.TextBox("file", "", new { type = "file", @class = "upload-items-input", @id = "upload_new_item_browse" })
+                            <div class="upload-modal-section-file-name">
+                                <div class="upload-modal-section-file-name-label">File Name:</div>
+                                <div class="upload-modal-section-file-name-title" id="upload_new_item_file_title" triggerButton="new_item_upload"></div>
+                            </div>
+                            <div id="upload_new_item_trigger" class="waves-effect waves-light btn">Browse</div>
+                            <input type="button" id="new_item_upload" value="Upload" class="waves-effect waves-light btn disabled upload-button" />
+                        </div>
+                        <progress value="0" max="100" id="new_item_upload_progress"></progress>
+            }
+        </div>
+        <div class="dl-mat-card upload-modal-section" id="iou_modal_section">
+            <div class="upload-header-text">Upload Item Patch Ownership</div>
+            @using (Html.BeginForm("UploadItemPatchOwnership", "Home", FormMethod.Post, new { enctype = "multipart/form-data", @id = "iou_file_form", @class = "upload-modal-file-form" }))
+            {
+                        <div id="get_iou_file">
+                    @Html.TextBox("file", "", new { type = "file", @class = "upload-items-input", @id = "upload_iou_browse" })
+                            <div class="upload-modal-section-file-name">
+                                <div class="upload-modal-section-file-name-label">File Name:</div>
+                                <div class="upload-modal-section-file-name-title" id="upload_iou_file_title" triggerButton="iou_upload"></div>
+                            </div>
+                            <div id="upload_iou_trigger" class="waves-effect waves-light btn">Browse</div>
+                            <input type="button" id="iou_upload" value="Upload" class="waves-effect waves-light btn disabled upload-button" />
+                        </div>
+                        <progress value="0" max="100" id="iou_upload_progress"></progress>
+            }
+        </div>
+    </div>
+</div>
+<div id="downloadModal" class="modal bottom-sheet">
+    <div class="modal-content">
+        <div class="row">
+            <div class="col s3 m4 l5">
+                <h3 class="modal-head">Exports</h3>
+                <ul class="collection">
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle">folder</i>
+                        <a id="btn_ExportFull" class="waves-effect waves-light">Export Filtered Data</a>
+                    </li>
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle">folder</i>
+                        <a id="btn_ExportNewItems" class="waves-effect waves-light">Export 0 Forecast Items</a>
+                    </li>
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle">folder</i>
+                        <a id="btn_ExportLowesForecasting" class="waves-effect waves-light">Working Forecast Template</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="col s3 m4 l5">
+                <h3 class="modal-head">Templates</h3>
+                <ul class="collection collapsible" data-collapsible="accordion">
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle">folder</i>
+                        <a class="collapsible-header waves-effect waves-light">Item Region LGM</a>
+                        <div class="collapsible-body">
+                            <ul class="collection">
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_TemplateItemRegionMM" class="waves-effect waves-light">Blank Template</a>
+                                </li>
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_DataItemRegionMM" class="waves-effect waves-light">Template with Filtered Data</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle">folder</i>
+                        <a class="collapsible-header waves-effect waves-light">Item Patch Week</a>
+                        <div class="collapsible-body">
+                            <ul class="collection">
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_TemplateItemPatchWeek" class="waves-effect waves-light">Blank Template</a>
+                                </li>
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_DataItemPatchWeek" class="waves-effect waves-light">Template with Filtered Data</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle">folder</i>
+                        <a class="collapsible-header waves-effect waves-light">Item LGM Week</a>
+                        <div class="collapsible-body">
+                            <ul class="collection">
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_TemplateItemMMWeek" class="waves-effect waves-light">Blank Template</a>
+                                </li>
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_DataItemMMWeek" class="waves-effect waves-light">Template with Filtered Data</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle">folder</i>
+                        <a class="collapsible-header waves-effect waves-light">Item Patch Total</a>
+                        <div class="collapsible-body">
+                            <ul class="collection">
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_TemplateItemPatchTotal" class="waves-effect waves-light">Blank Template</a>
+                                </li>
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_DataItemPatchTotal" class="waves-effect waves-light">Template with Filtered Data</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle">folder</i>
+                        <a class="collapsible-header waves-effect waves-light">Item LGM Total</a>
+                        <div class="collapsible-body">
+                            <ul class="collection">
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_TemplateItemMMTotal" class="waves-effect waves-light">Blank Template</a>
+                                </li>
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_DataItemMMTotal" class="waves-effect waves-light">Template with Filtered Data</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle">folder</i>
+                        <a class="collapsible-header waves-effect waves-light">Item Ownership</a>
+                        <div class="collapsible-body">
+                            <ul class="collection">
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_TemplateItemPatchOwnership" class="waves-effect waves-light">Blank Template</a>
+                                </li>
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_DataItemPatchOwnership" class="waves-effect waves-light">Item/Patch Ownership Data</a>
+                                </li>
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_DataItemPatchOverlap" class="waves-effect waves-light">Item/Patch Overlap Data</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle">folder</i>
+                        <a class="collapsible-header waves-effect waves-light">New Items</a>
+                        <div class="collapsible-body">
+                            <ul class="collection">
+                                <li class="collection-item avatar">
+                                    <i class="material-icons circle">folder</i>
+                                    <a id="btn_TemplateNewItemsUpload" class="waves-effect waves-light">Blank Template</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Preloader and it's background. -->
+<div class="preloader-background">
+    <div class="preloader-wrapper big active">
+        <div class="spinner-layer spinner-blue">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div>
+            <div class="gap-patch">
+                <div class="circle"></div>
+            </div>
+            <div class="circle-clipper right">
+                <div class="circle"></div>
+            </div>
+        </div>
+        <div class="spinner-layer spinner-red">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div>
+            <div class="gap-patch">
+                <div class="circle"></div>
+            </div>
+            <div class="circle-clipper right">
+                <div class="circle"></div>
+            </div>
+        </div>
+        <div class="spinner-layer spinner-yellow">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div>
+            <div class="gap-patch">
+                <div class="circle"></div>
+            </div>
+            <div class="circle-clipper right">
+                <div class="circle"></div>
+            </div>
+        </div>
+        <div class="spinner-layer spinner-green">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div>
+            <div class="gap-patch">
+                <div class="circle"></div>
+            </div>
+            <div class="circle-clipper right">
+                <div class="circle"></div>
+            </div>
+        </div>
+    </div>
+    <p>Please wait while your data loads ...</p>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#updating-gif')
+            .hide()
+            .ajaxStart(function () {
+                $(this).show();
+            })
+            .ajaxStop(function () {
+                $(this).hide();
+            });
+    });
+</script>
+
+
+
+<div id="updating">
+    <div id="updating-background">
+        <img src="~/Content/Images/updating.gif" alt="Updating" id="updating-gif" />
+    </div>
+</div>
+<div id="noRecordsModal" class="modal modal-fixed-footer">
+    <div class="modal-content">
+        <h3 class="modal-head">No Records Found.</h3>
+        <p>
+            There are no records for the selected filters.  Please remove the most recently added filter.
+            If you believe this is an error, please contact support@demandlink.com.
+        </p>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="modal-close waves-effect waves-light btn">Got it.</a>
+    </div>
+</div>
+<div id="noRecordsTotalModal" class="modal modal-fixed-footer">
+    <div class="modal-content">
+        <h3 class="modal-head">No Records Found.</h3>
+        <p>
+            There are no records being returned for this user.
+            If you believe this is an error, please contact support@demandlink.com.
+        </p>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-light btn">Got it.</a>
+    </div>
+</div>
+<div id="logoutModal" class="modal modal-fixed-footer">
+    <div class="modal-content">
+        <h3 class="modal-head">You are logging out.</h3>
+        <p>
+            Are you sure you want to proceed?
+        </p>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-light btn" id="logout_yes">Yes</a>
+        <a href="#" class="modal-close waves-effect waves-light btn red lighten-1" id="cancel_logout">Cancel</a>
+    </div>
+</div>
+
+<!-- Event Modal -->
+<div id="dl-event-modal" class="modal modal-fixed-footer open">
+    <div class="col s12 modal-head dl-event-modal-header">
+        <span id="dl-event-modal-title" class="flow-text">Please select an event</span>
+    </div>
+    <div class="modal-content dl-event-modal-content">
+        <div id="dl-event-modal-body"></div>
+        <div id="dl-event-file-content"></div>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="modal-action modal-close waves-effect waves-light btn"><i class="material-icons left">close</i>CLOSE</a>
+    </div>
+    <div id="dl-event-sidenav-container">
+        <ul id="dl-event-sidenav" class="side-nav">
+            <li id="dl-event-sidenav-header">Events</li>
+        </ul>
+        <a id="dl-event-sidenav-trigger" href="#" data-activates="dl-event-sidenav" class="button-collapse tooltipped"><i class="material-icons">navigate_next</i></a>
+    </div>
+</div>
+
+@*tutorial Tutorials Modal*@
+<div id="tutorial-modal" class="modal modal-fixed-footer open">
+    <div class="modal-content">
+        <div id="tutorial-modal-row" class="row dl-modal-tabbed-row"></div>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="modal-close waves-effect waves-light btn"><i class="material-icons left">close</i>CLOSE</a>
+    </div>
+    <div id="tutorial-sidenav-container">
+        <ul id="tutorial-sidenav" class="side-nav">
+            <li id="tutorial-sidenav-header">Tutorials</li>
+        </ul>
+        <a id="tutorial-sidenav-trigger" href="#" data-activates="tutorial-sidenav" class="button-collapse tooltipped"><i class="material-icons">navigate_next</i></a>
+    </div>
+</div>
+
+@*Create Event/tutorial/Notification Modal*@
+@if (ViewBag.IsAdmin)
+{
+            <div id="admin-modal" class="modal modal-fixed-footer open">
+                <div class="modal-content admin-modal-content">
+                    <div id="admin-modal-row" class="row dl-modal-tabbed-row">
+                        <div class="col s12 dl-modal-tab-list-container">
+                            <ul id="admin-modal-tab-list" class="tabs dl-modal-tab-list">
+                                <li class="tab col s4"><a href="#create-notifications">Notifications</a></li>
+                                <li class="tab col s4"><a href="#create-tutorial">Tutorials</a></li>
+                                <li class="tab col s4"><a href="#create-event">Events</a></li>
+                            </ul>
+                        </div>
+                        <div id="create-notifications" class="row dl-admin-create-body">
+                            <div class="col s12 modal-head tutorial-title"><span class="flow-text">Create A Notification</span></div>
+                            <div class="divider"></div>
+                            <div class="col s12 vert-split-container">
+                                <div class="row">
+                                    <div class="input-field col s4">
+                                        <input id="create-notifications-title" type="text" data-length="50">
+                                        <label for="create-notifications-title">Notification Title</label>
+                                    </div>
+                                    <div class="input-field col s8">
+                                        <input id="create-notifications-intro" type="text" data-length="100">
+                                        <label for="create-notifications-intro">Notification Description</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-field col s4">
+                                        <select id="notifications-category-list"></select>
+                                        <label>Select Parent</label>
+                                    </div>
+                                    <div id="notifications-temp-list-wrapper" class="input-field col s4">
+                                    </div>
+                                    <div class="input-field col s3">
+                                        <select id="notifications-vendor-list"></select>
+                                        <label>Select Vendor</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col s3">
+                                        <label for="notifications-start-date" class="">Start Date</label>
+                                        <input id="notifications-start-date" type="text" class="datepicker">
+                                    </div>
+                                    <div class="col s3">
+                                        <label for="notifications-start-time" class="">Start Time</label>
+                                        <input id="notifications-start-time" type="text" class="timepicker">
+                                    </div>
+                                    <div class="col s3">
+                                        <label for="notifications-end-date" class="">End Date</label>
+                                        <input id="notifications-end-date" type="text" class="datepicker">
+                                    </div>
+                                    <div class="col s3">
+                                        <label for="notifications-end-time" class="">End Time</label>
+                                        <input id="notifications-end-time" type="text" class="timepicker">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col s2">
+                                        Select Project
+                                        <form action="#">
+                                            <p>
+                                                <input class="admin-radio" name="group1" type="radio" id="admin-notification-radio-all" />
+                                                <label for="admin-notification-radio-all">All</label>
+                                            </p>
+                                            <p>
+                                                <input class="admin-radio" name="group1" type="radio" id="admin-notification-radio-app" checked />
+                                                <label for="admin-notification-radio-app">Forecast</label>
+                                            </p>
+                                        </form>
+                                    </div>
+                                    <div class="col s4 offset-s6">
+                                        <a id="admin-notifications-create" class="waves-effect waves-light btn admin-create-group"><i class="material-icons left">done</i>Save</a>
+                                        <a id="admin-notifications-edit" class="waves-effect waves-light btn admin-create-group" style="display: none"><i class="material-icons left">edit</i>Edit</a>
+                                        <a id="admin-notifications-cancel" class="waves-effect waves-light btn red admin-create-group cancel-button" style="display: none"><i class="material-icons left">cancel</i>Cancel</a>
+                                    </div>
+                                </div>
+                                <div class="col s12 modal-head dl-modal-title dl-modal-edit-delete-title"><span class="flow-text">Edit/Delete Notification</span></div>
+                                <div class="divider dl-modal-divider"></div>
+                                <div class="row">
+                                    <div class="col s6">
+                                        <div class="row admin-edit-delete-row">
+                                            <div class="input-field col s6">
+                                                <i class="material-icons prefix">mode_edit</i>
+                                                <select id="notifications-edit-list"></select>
+                                                <label>Select Notification</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col s6">
+                                        <div class="row admin-edit-delete-row">
+                                            <div class="input-field col s6">
+                                                <select id="notifications-delete-list"></select>
+                                                <label>Select Notification</label>
+                                            </div>
+                                            <div id="admin-delete-row" class="col s4 admin-edit-delete-button-row">
+                                                <a id="admin-notifications-delete" class="waves-effect waves-light btn admin-edit-delete-button"><i class="material-icons left">delete</i>Delete</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                @*Create tutorial Tutorial*@
+                        <div id="create-tutorial" class="row dl-admin-create-body">
+                            <div class="col s12 modal-head tutorial-title"><span class="flow-text">Create Tutorial</span></div>
+                            <div class="divider"></div>
+                            <div class="col s12 vert-split-container">
+                                <div class="row">
+                                    <div class="input-field col s8">
+                                        <input id="tutorial-title" type="text" data-length="50">
+                                        <label for="tutorial-title">Tutorial Title</label>
+                                    </div>
+                                    <div class="input-field col s2">
+                                        <select id="tutorial-groups-list"></select>
+                                        <label>Select Tutorial Group</label>
+                                    </div>
+                                    <div class="input-field col s2">
+                                        <input id="tutorial-group" type="text" data-length="28">
+                                        <label for="tutorial-group">Group Name</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-field col s12">
+                                        <input id="tutorial-video-link" type="text" data-length="50">
+                                        <label for="tutorial-video-link">Video Link</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-field col s6">
+                                        <textarea id="tutorial-intro" class="materialize-textarea"></textarea>
+                                        <label for="tutorial-intro">Tutorial Intro/Instructions</label>
+                                    </div>
+                                    <div class="col s6 admin-create-button-row">
+                                        <a id="admin-tutorial-create" class="waves-effect waves-light btn admin-create-group"><i class="material-icons left">done</i>Save</a>
+                                        <a id="admin-tutorial-edit" class="waves-effect waves-light btn admin-create-group" style="display: none"><i class="material-icons left">edit</i>Edit</a>
+                                        <a id="admin-tutorial-cancel" class="waves-effect waves-light btn red admin-create-group cancel-button" style="display: none"><i class="material-icons left">cancel</i>Cancel</a>
+                                    </div>
+                                </div>
+                                <div class="col s12 modal-head dl-modal-title dl-modal-edit-delete-title"><span class="flow-text">Edit/Delete Tutorial</span></div>
+                                <div class="divider dl-modal-divider"></div>
+                                <div class="row">
+                                    <div class="col s6">
+                                        <div class="row admin-edit-delete-row">
+                                            <div class="input-field col s6">
+                                                <i class="material-icons prefix">mode_edit</i>
+                                                <select id="tutorial-edit-list"></select>
+                                                <label>Select Tutorial</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col s6">
+                                        <div class="row admin-delete-row">
+                                            <div class="input-field col s4">
+                                                <select id="tutorial-delete-list"></select>
+                                                <label>Select Tutorial</label>
+                                            </div>
+                                            <div id="admin-delete-row" class="col s4 admin-delete-button-row">
+                                                <a id="admin-tutorial-delete" class="waves-effect waves-light btn admin-delete-button"><i class="material-icons left">delete</i>Delete</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                @*Create DlEvent Event*@
+                        <div id="create-event" class="row dl-admin-create-body">
+                            <div class="col s12 modal-head tutorial-title"><span class="flow-text">Create Event</span></div>
+                            <div class="divider"></div>
+                            <div class="col s12 vert-split-container">
+                                <div class="row">
+                                    <div class="input-field col s12">
+                                        <input id="dl-event-title" type="text" data-length="50">
+                                        <label for="dl-event-title">Event Title</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-field col s7">
+                                        <textarea id="dl-event-body" class="materialize-textarea"></textarea>
+                                        <label for="dl-event-body">Event Description</label>
+                                    </div>
+                                    <div class="col s2">
+                                        <div id="upload-dl-event-trigger" class="waves-effect waves-light btn">Browse</div>
+                                    </div>
+                                    <div class="col s3">
+                                        <div id="get-file-for-dl-event">
+                                            <form id="fileUploadForm" enctype="multipart/form-data" method="post">
+                                                <div id="get-dl-event-file">
+                                                    <input type="file" name="EventFile" id="browse-dl-event-file" /> <br />
+                                                    <textarea id="dl-event-file-title" class="materialize-textarea"></textarea>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col s3">
+                                        <label for="dl-event-start-date" class="">Event Start Date</label>
+                                        <input id="dl-event-start-date" type="text" class="datepicker">
+                                    </div>
+                                    <div class="col s3">
+                                        <label for="dl-event-start-time" class="">Event Start Time</label>
+                                        <input id="dl-event-start-time" type="text" class="timepicker">
+                                    </div>
+                                    <div class="col s3">
+                                        <label for="dl-event-end-date" class="">Event End Date</label>
+                                        <input id="dl-event-end-date" type="text" class="datepicker">
+                                    </div>
+                                    <div class="col s3">
+                                        <label for="dl-event-end-time" class="">Event End Time</label>
+                                        <input id="dl-event-end-time" type="text" class="timepicker">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col s2">
+                                        Select Project
+                                        <form action="#">
+                                            <p>
+                                                <input class="admin-radio" name="group1" type="radio" id="dl-event-radio-all" />
+                                                <label for="dl-event-radio-all">All</label>
+                                            </p>
+                                            <p>
+                                                <input class="admin-radio" name="group1" type="radio" id="dl-event-radio-app" checked />
+                                                <label for="dl-event-radio-app">Forecast</label>
+                                            </p>
+                                        </form>
+                                    </div>
+                                    <div class="col s4 offset-s6 admin-create-button-row">
+                                        <a id="admin-dl-event-create" class="waves-effect waves-light btn admin-create-group"><i class="material-icons left">done</i>Save</a>
+                                        <a id="admin-dl-event-edit" class="waves-effect waves-light btn admin-create-group" style="display: none"><i class="material-icons left">edit</i>Edit</a>
+                                        <a id="admin-dl-event-cancel" class="waves-effect waves-light btn red admin-create-group cancel-button" style="display: none"><i class="material-icons left">cancel</i>Cancel</a>
+                                    </div>
+                                </div>
+                                <div class="col s12 modal-head dl-modal-title dl-modal-edit-delete-title"><span class="flow-text">Edit/Delete Event</span></div>
+                                <div class="divider dl-modal-divider"></div>
+                                <div class="row">
+                                    <div class="col s6">
+                                        <div class="row admin-edit-delete-row">
+                                            <div class="input-field col s6">
+                                                <i class="material-icons prefix">mode_edit</i>
+                                                <select id="dl-event-edit-list"></select>
+                                                <label>Select Event</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col s6">
+                                        <div class="row admin-delete-row">
+                                            <div class="input-field col s4">
+                                                <select id="dl-event-delete-list"></select>
+                                                <label>Select Event</label>
+                                            </div>
+                                            <div id="admin-delete-row" class="col s4 admin-delete-button-row">
+                                                <a id="admin-dl-event-delete" class="waves-effect waves-light btn admin-delete-button"><i class="material-icons left">delete</i>Delete Event</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="modal-close waves-effect waves-light btn"><i class="material-icons left">close</i>CLOSE</a>
+                </div>
+            </div>
+}
+
+
+@*Notifications Side Nav*@
+<a id="notifications-nav-trigger" href="#" data-activates="notifications-side-nav" class="button-collapse" hidden="hidden"></a>
+<div id="notifications-side-nav" class="side-nav">
+    <div class="notifications-header">Notifications<i class="material-icons">clear</i></div>
+    <ul id="notifications-list"></ul>
+    <div id="clear-notifications-list" class="waves-effect waves-light">Clear All</div>
+</div>
+
+
+<input type="hidden" value=@Model.GMSVenID id="GMSVenID" />
+<input type="hidden" value=@Model.TableName id="TableName" />
+<input type="hidden" value=@Model.Username id="Username" />
+<input type="hidden" value="@Model.VendorGroup" id="VendorGroup" />
